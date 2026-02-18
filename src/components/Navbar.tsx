@@ -2,7 +2,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { ShoppingCart, Menu, X, Search, Phone, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useCart } from '@/context/CartContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
+import { Globe } from 'lucide-react';
 
 const navLinks = [
   {
@@ -34,6 +36,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const { totalItems } = useCart();
+  const { language, setLanguage } = useLanguage();
   const location = useLocation();
 
   return (
@@ -116,6 +119,17 @@ export default function Navbar() {
                   </span>
                 )}
               </Link>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setLanguage(language === 'fr' ? 'ar' : 'fr')}
+                className="w-9 h-9 rounded-lg"
+                title={language === 'fr' ? 'Switch to Arabic' : 'Changer en Français'}
+              >
+                <Globe className="w-4 h-4 mr-1" />
+                <span className="text-[10px] font-bold uppercase">{language === 'fr' ? 'AR' : 'FR'}</span>
+              </Button>
 
               <Button
                 variant="default"
