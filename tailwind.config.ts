@@ -13,8 +13,10 @@ export default {
       },
     },
     extend: {
-      colors: {
+        colors: {
         border: "hsl(var(--border))",
+        success: "hsl(var(--success))",
+        warning: "hsl(var(--warning))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
