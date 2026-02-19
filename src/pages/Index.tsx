@@ -2,16 +2,16 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Truck, RotateCcw, Star, Wrench, Search, Zap, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProductCard from '@/components/ProductCard';
-import { repairServices } from '@/data/products';
-import { getCategories, getProducts } from '@/lib/api';
-import { useLanguage } from '@/context/LanguageContext';
+import { laptops, parts, repairServices } from '@/data/products';
 import heroImg from '@/assets/hero-laptops.jpg';
 import repairImg from '@/assets/repair-service.jpg';
 import partsImg from '@/assets/laptop-parts.jpg';
 
+const featuredLaptops = laptops.slice(0, 4);
+const featuredParts = parts.slice(0, 4);
 
 const reviews = [
   { name: 'James R.', rating: 5, text: 'Got a refurbished ThinkPad T480 — it looks and works like new. The warranty gave me total peace of mind.', product: 'ThinkPad T480' },
@@ -22,35 +22,7 @@ const reviews = [
 
 export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [categories, setCategories] = useState<any[]>([]);
-  const [featuredLaptops, setFeaturedLaptops] = useState<any[]>([]);
-  const [featuredParts, setFeaturedParts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { language } = useLanguage();
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const cats = await getCategories(language);
-        setCategories(cats);
-
-        const productsResponse = await getProducts({ lang: language });
-        const products = productsResponse.data;
-
-        // Split products for display (mocking the split if categories are limited)
-        setFeaturedLaptops(products.slice(0, 4));
-        setFeaturedParts(products.slice(4, 8));
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [language]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,37 +130,58 @@ export default function Index() {
           <p className="text-muted-foreground mb-8">Everything your laptop needs, in one place.</p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {categories.length > 0 ? (
-              categories.map(cat => (
-                <Link
-                  key={cat.id}
-                  to={`/laptops?category_id=${cat.id}`}
-                  className="group relative overflow-hidden rounded-2xl bg-card border border-border card-hover shadow-product"
-                >
-                  <div className="relative h-48 overflow-hidden">
-                    <img
-                      src={cat.image || heroImg}
-                      alt={cat.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-secondary/80 to-transparent" />
-                  </div>
-                  <div className="p-5">
-                    <h3 className="text-lg font-bold text-foreground mb-1">{cat.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{cat.description || 'Quality products in this category.'}</p>
-                    <span className="inline-flex items-center text-sm font-semibold text-primary group-hover:gap-2 transition-all gap-1">
-                      Browse Category <ChevronRight className="w-4 h-4" />
-                    </span>
-                  </div>
-                </Link>
-              ))
-            ) : (
-              // Loading or Empty state
-              [1, 2, 3].map(i => (
-                <div key={i} className="h-64 bg-muted rounded-2xl animate-pulse" />
-              ))
-            )}
+            {[
+              {
+                title: 'Refurbished & New Laptops',
+                sub: 'Business, home & creator laptops with warranty',
+                href: '/laptops',
+                image: heroImg,
+                cta: 'Shop Laptops',
+                badge: '10 models',
+              },
+              {
+                title: 'Parts & Accessories',
+                sub: 'Batteries, screens, RAM, SSD, keyboards & more',
+                href: '/parts',
+                image: partsImg,
+                cta: 'Browse Parts',
+                badge: '200+ SKUs',
+              },
+              {
+                title: 'Repair Services',
+                sub: 'Same-day repairs by certified technicians',
+                href: '/services',
+                image: repairImg,
+                cta: 'Book a Repair',
+                badge: 'From $0',
+              },
+            ].map(cat => (
+              <Link
+                key={cat.href}
+                to={cat.href}
+                className="group relative overflow-hidden rounded-2xl bg-card border border-border card-hover shadow-product"
+              >
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={cat.image}
+                    alt={cat.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-secondary/80 to-transparent" />
+                  <span className="absolute top-3 right-3 text-xs font-semibold bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+                    {cat.badge}
+                  </span>
+                </div>
+                <div className="p-5">
+                  <h3 className="text-lg font-bold text-foreground mb-1">{cat.title}</h3>
+                  <p className="text-sm text-muted-foreground mb-4">{cat.sub}</p>
+                  <span className="inline-flex items-center text-sm font-semibold text-primary group-hover:gap-2 transition-all gap-1">
+                    {cat.cta} <ChevronRight className="w-4 h-4" />
+                  </span>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
@@ -207,13 +200,9 @@ export default function Index() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {loading ? (
-              [1, 2, 3, 4].map(i => <div key={i} className="h-[400px] bg-muted rounded-xl animate-pulse" />)
-            ) : (
-              featuredLaptops.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))
-            )}
+            {featuredLaptops.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
           </div>
         </div>
       </section>
@@ -268,13 +257,9 @@ export default function Index() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {loading ? (
-              [1, 2, 3, 4].map(i => <div key={i} className="h-[400px] bg-muted rounded-xl animate-pulse" />)
-            ) : (
-              featuredParts.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))
-            )}
+            {featuredParts.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
           </div>
         </div>
       </section>
@@ -285,7 +270,7 @@ export default function Index() {
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">What Customers Say</h2>
             <div className="flex items-center justify-center gap-2">
-              {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-5 h-5 fill-warning text-warning" />)}
+              {[1,2,3,4,5].map(i => <Star key={i} className="w-5 h-5 fill-warning text-warning" />)}
               <span className="text-lg font-bold text-foreground ml-1">4.8</span>
               <span className="text-muted-foreground">from 3,000+ reviews</span>
             </div>
@@ -295,7 +280,7 @@ export default function Index() {
             {reviews.map((review, i) => (
               <div key={i} className="bg-card border border-border rounded-xl p-5 shadow-product">
                 <div className="flex mb-2">
-                  {[1, 2, 3, 4, 5].map(s => (
+                  {[1,2,3,4,5].map(s => (
                     <Star key={s} className={`w-3.5 h-3.5 ${s <= review.rating ? 'fill-warning text-warning' : 'fill-muted text-muted'}`} />
                   ))}
                 </div>

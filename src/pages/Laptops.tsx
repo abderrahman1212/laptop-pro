@@ -1,10 +1,9 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Search, SlidersHorizontal, X, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import ProductCard from '@/components/ProductCard';
-import { getProducts, getCategories } from '@/lib/api';
-import { useLanguage } from '@/context/LanguageContext';
+import { laptops } from '@/data/products';
 import { useSearchParams } from 'react-router-dom';
 
 const brands = ['All', 'Lenovo', 'Dell', 'HP', 'ASUS', 'Microsoft', 'Acer'];
@@ -19,63 +18,26 @@ const priceRanges = [
 const sortOptions = ['Featured', 'Price: Low to High', 'Price: High to Low', 'Top Rated', 'Newest'];
 
 export default function Laptops() {
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
   const [search, setSearch] = useState('');
-  const [categories, setCategories] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [brand, setBrand] = useState('All');
   const [condition, setCondition] = useState(params.get('condition') || 'All');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
-    params.get('category_id') ? parseInt(params.get('category_id')!) : null
-  );
   const [priceRange, setPriceRange] = useState(0);
   const [sort, setSort] = useState('Featured');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const { language } = useLanguage();
-
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const cats = await getCategories(language);
-        setCategories(cats);
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-      }
-    };
-    fetchInitialData();
-  }, [language]);
-
-  useEffect(() => {
-    const fetchProductsData = async () => {
-      setLoading(true);
-      try {
-        const response = await getProducts({
-          lang: language,
-          category_id: selectedCategoryId || undefined,
-        });
-        setProducts(response.data);
-      } catch (error) {
-        console.error('Error fetching products:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProductsData();
-  }, [language, selectedCategoryId]);
 
   const filtered = useMemo(() => {
-    let list = [...products];
-    if (search) list = list.filter(p => p.title.toLowerCase().includes(search.toLowerCase()) || (p.brand && p.brand.toLowerCase().includes(search.toLowerCase())));
+    let list = [...laptops];
+    if (search) list = list.filter(p => p.title.toLowerCase().includes(search.toLowerCase()) || p.brand.toLowerCase().includes(search.toLowerCase()));
     if (brand !== 'All') list = list.filter(p => p.brand === brand);
     if (condition !== 'All') list = list.filter(p => p.condition === condition);
     const range = priceRanges[priceRange];
-    list = list.filter(p => (p.price || 0) >= range.min && (p.price || 0) <= range.max);
+    list = list.filter(p => p.price >= range.min && p.price <= range.max);
     if (sort === 'Price: Low to High') list.sort((a, b) => a.price - b.price);
     else if (sort === 'Price: High to Low') list.sort((a, b) => b.price - a.price);
-    else if (sort === 'Top Rated') list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    else if (sort === 'Top Rated') list.sort((a, b) => b.rating - a.rating);
     return list;
-  }, [search, brand, condition, priceRange, sort, products]);
+  }, [search, brand, condition, priceRange, sort]);
 
   const activeFilters = [
     brand !== 'All' && brand,
@@ -155,27 +117,6 @@ export default function Laptops() {
           {/* Sidebar filters */}
           <aside className={`${filtersOpen ? 'block' : 'hidden'} sm:block w-full sm:w-56 shrink-0 space-y-6`}>
             <div className="bg-card border border-border rounded-xl p-4">
-              <h3 className="font-semibold text-sm text-foreground mb-3">Categories</h3>
-              <div className="space-y-2">
-                <button
-                  onClick={() => { setSelectedCategoryId(null); setParams({}); }}
-                  className={`w-full text-left text-sm px-2 py-1 rounded-lg transition-colors ${selectedCategoryId === null ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground hover:bg-muted'}`}
-                >
-                  All Categories
-                </button>
-                {categories.map(cat => (
-                  <button
-                    key={cat.id}
-                    onClick={() => { setSelectedCategoryId(cat.id); setParams({ category_id: cat.id.toString() }); }}
-                    className={`w-full text-left text-sm px-2 py-1 rounded-lg transition-colors ${selectedCategoryId === cat.id ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground hover:bg-muted'}`}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-card border border-border rounded-xl p-4">
               <h3 className="font-semibold text-sm text-foreground mb-3">Brand</h3>
               <div className="space-y-2">
                 {brands.map(b => (
@@ -224,14 +165,10 @@ export default function Laptops() {
           {/* Products grid */}
           <div className="flex-1">
             <p className="text-sm text-muted-foreground mb-4">{filtered.length} laptop{filtered.length !== 1 ? 's' : ''} found</p>
-            {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-80 bg-muted rounded-xl animate-pulse" />)}
-              </div>
-            ) : filtered.length === 0 ? (
+            {filtered.length === 0 ? (
               <div className="text-center py-16">
                 <p className="text-muted-foreground mb-4">No laptops match your filters.</p>
-                <Button onClick={() => { setBrand('All'); setCondition('All'); setPriceRange(0); setSearch(''); setSelectedCategoryId(null); setParams({}); }}>Clear Filters</Button>
+                <Button onClick={() => { setBrand('All'); setCondition('All'); setPriceRange(0); setSearch(''); }}>Clear Filters</Button>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">

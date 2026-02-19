@@ -5,7 +5,7 @@ import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 
 interface ProductCardProps {
-  product: any; // Using any for now to facilitate early integration with dynamic data
+  product: Product;
 }
 
 const conditionColors: Record<string, string> = {
@@ -25,15 +25,15 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Image */}
       <Link to={`/product/${product.id}`} className="block relative overflow-hidden bg-muted">
         <img
-          src={product.images?.[0] ? `${import.meta.env.VITE_STORAGE_URL}/${product.images[0]}` : '/placeholder-product.jpg'}
+          src={product.image}
           alt={product.title}
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
         />
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${conditionColors[product.condition || 'New']}`}>
-            {product.condition || 'New'}
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${conditionColors[product.condition]}`}>
+            {product.condition}
           </span>
           {product.badge && (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-primary text-primary-foreground">
@@ -51,7 +51,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Content */}
       <div className="p-4 flex flex-col flex-1">
         <Link to={`/product/${product.id}`}>
-          <p className="text-xs text-muted-foreground mb-1 font-medium">{product.brand || product.category?.name || 'Laptop'}</p>
+          <p className="text-xs text-muted-foreground mb-1 font-medium">{product.brand}</p>
           <h3 className="text-sm font-semibold text-foreground leading-snug mb-2 line-clamp-2 group-hover:text-primary transition-colors">
             {product.title}
           </h3>
@@ -63,12 +63,12 @@ export default function ProductCard({ product }: ProductCardProps) {
             {[1, 2, 3, 4, 5].map(i => (
               <Star
                 key={i}
-                className={`w-3 h-3 ${i <= Math.round(product.rating || 5) ? 'fill-warning text-warning' : 'fill-muted text-muted'}`}
+                className={`w-3 h-3 ${i <= Math.round(product.rating) ? 'fill-warning text-warning' : 'fill-muted text-muted'}`}
               />
             ))}
           </div>
           <span className="text-xs text-muted-foreground">
-            {product.rating || '5.0'} ({product.reviewCount || 0})
+            {product.rating} ({product.reviewCount})
           </span>
         </div>
 
@@ -81,7 +81,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Warranty badge */}
-        {(product.condition === 'Refurbished' || !product.condition) && (
+        {product.condition === 'Refurbished' && (
           <div className="flex items-center gap-1 text-xs text-success mb-3">
             <BadgeCheck className="w-3.5 h-3.5" />
             <span className="font-medium">12-month warranty</span>
@@ -89,9 +89,9 @@ export default function ProductCard({ product }: ProductCardProps) {
         )}
 
         {/* Stock */}
-        {product.stock <= 5 && product.stock > 0 && (
+        {product.stockCount <= 5 && product.inStock && (
           <p className="text-xs text-destructive font-medium mb-2">
-            Only {product.stock} left in stock!
+            Only {product.stockCount} left in stock!
           </p>
         )}
 
@@ -100,10 +100,10 @@ export default function ProductCard({ product }: ProductCardProps) {
             className="w-full"
             size="sm"
             onClick={() => addToCart(product)}
-            disabled={product.stock === 0}
+            disabled={!product.inStock}
           >
             <ShoppingCart className="w-3.5 h-3.5 mr-1.5" />
-            {(product.stock > 0 || product.inStock) ? 'Add to Cart' : 'Out of Stock'}
+            {product.inStock ? 'Add to Cart' : 'Out of Stock'}
           </Button>
         </div>
       </div>

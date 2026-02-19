@@ -1,61 +1,31 @@
 import { Link, useParams } from 'react-router-dom';
 import { ShoppingCart, Star, BadgeCheck, ChevronRight, Truck, RotateCcw, Shield, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect } from 'react';
-import { getProduct, getProducts } from '@/lib/api';
-import { useLanguage } from '@/context/LanguageContext';
+import { useState } from 'react';
+import { allProducts } from '@/data/products';
 import { useCart } from '@/context/CartContext';
 import ProductCard from '@/components/ProductCard';
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const { addToCart } = useCart();
-  const { language } = useLanguage();
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
-  const [product, setProduct] = useState<any>(null);
-  const [related, setRelated] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchProductDetails = async () => {
-      if (!id) return;
-      setLoading(true);
-      try {
-        const p = await getProduct(id, language);
-        setProduct(p);
+  const product = allProducts.find(p => p.id === id);
 
-        // Fetch related products (e.g., same category)
-        const rel = await getProducts({
-          category_id: p.category?.id,
-          lang: language
-        });
-        setRelated(rel.data.filter((r: any) => r.id !== p.id).slice(0, 4));
-      } catch (error) {
-        console.error('Error fetching product details:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProductDetails();
-  }, [id, language]);
-
-  if (loading) {
+  if (!product) {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-full max-w-4xl p-8 grid grid-cols-1 lg:grid-cols-2 gap-10">
-          <div className="aspect-square bg-muted animate-pulse rounded-2xl" />
-          <div className="space-y-4">
-            <div className="h-8 bg-muted animate-pulse w-3/4 rounded" />
-            <div className="h-4 bg-muted animate-pulse w-1/2 rounded" />
-            <div className="h-10 bg-muted animate-pulse w-1/4 rounded" />
-            <div className="h-20 bg-muted animate-pulse w-full rounded" />
-          </div>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-foreground mb-4">Product not found</h1>
+          <Button asChild><Link to="/laptops">Browse Laptops</Link></Button>
         </div>
       </main>
     );
   }
+
+  const related = allProducts.filter(p => p.id !== product.id && p.category === product.category).slice(0, 4);
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
@@ -87,7 +57,7 @@ export default function ProductDetail() {
           <div>
             <div className="relative bg-muted rounded-2xl overflow-hidden mb-3 aspect-square max-h-[460px]">
               <img
-                src={product.images?.[0] ? `${import.meta.env.VITE_STORAGE_URL}/${product.images[0]}` : '/placeholder-product.jpg'}
+                src={product.image}
                 alt={product.title}
                 className="w-full h-full object-contain p-6"
               />
@@ -120,7 +90,7 @@ export default function ProductDetail() {
             {/* Rating */}
             <div className="flex items-center gap-2 mb-4">
               <div className="flex">
-                {[1, 2, 3, 4, 5].map(i => (
+                {[1,2,3,4,5].map(i => (
                   <Star key={i} className={`w-4 h-4 ${i <= Math.round(product.rating) ? 'fill-warning text-warning' : 'fill-muted text-muted'}`} />
                 ))}
               </div>
@@ -128,7 +98,7 @@ export default function ProductDetail() {
               <span className="text-sm text-muted-foreground">({product.reviewCount} reviews)</span>
             </div>
 
-            <p className="text-muted-foreground leading-relaxed mb-5">{product.description}</p>
+            <p className="text-muted-foreground leading-relaxed mb-5">{product.shortDescription}</p>
 
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-5">
@@ -150,10 +120,10 @@ export default function ProductDetail() {
             )}
 
             {/* Stock */}
-            <div className={`text-sm font-medium mb-5 ${product.stock > 0 ? 'text-success' : 'text-destructive'}`}>
-              {product.stock > 0
-                ? product.stock <= 5
-                  ? `⚠️ Only ${product.stock} left in stock — order soon!`
+            <div className={`text-sm font-medium mb-5 ${product.inStock ? 'text-success' : 'text-destructive'}`}>
+              {product.inStock
+                ? product.stockCount <= 5
+                  ? `⚠️ Only ${product.stockCount} left in stock — order soon!`
                   : '✓ In Stock — Ready to ship'
                 : '✗ Out of Stock'}
             </div>
@@ -167,7 +137,7 @@ export default function ProductDetail() {
                 >−</button>
                 <span className="px-4 py-2 text-sm font-semibold text-foreground min-w-[40px] text-center">{qty}</span>
                 <button
-                  onClick={() => setQty(q => Math.min(product.stock, q + 1))}
+                  onClick={() => setQty(q => Math.min(product.stockCount, q + 1))}
                   className="px-3 py-2 text-foreground hover:bg-muted transition-colors text-lg font-medium"
                 >+</button>
               </div>
@@ -175,7 +145,7 @@ export default function ProductDetail() {
                 size="lg"
                 className="flex-1 shadow-blue"
                 onClick={handleAddToCart}
-                disabled={product.stock === 0}
+                disabled={!product.inStock}
               >
                 <ShoppingCart className="w-4 h-4 mr-2" />
                 {added ? 'Added to Cart ✓' : 'Add to Cart'}
@@ -203,11 +173,11 @@ export default function ProductDetail() {
 
         {/* Features + Specs */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
-          {product.features && product.features.length > 0 && (
+          {product.features.length > 0 && (
             <div className="bg-card border border-border rounded-2xl p-6">
               <h2 className="text-lg font-bold text-foreground mb-4">Key Features</h2>
               <ul className="space-y-2.5">
-                {product.features.map((f: string, i: number) => (
+                {product.features.map((f, i) => (
                   <li key={i} className="flex items-start gap-2.5 text-sm text-foreground">
                     <Check className="w-4 h-4 text-success mt-0.5 shrink-0" />
                     {f}
@@ -217,7 +187,7 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {product.specs && Object.keys(product.specs).length > 0 && (
+          {product.specs && (
             <div className="bg-card border border-border rounded-2xl p-6">
               <h2 className="text-lg font-bold text-foreground mb-4">Specifications</h2>
               <table className="w-full">
@@ -225,7 +195,7 @@ export default function ProductDetail() {
                   {Object.entries(product.specs).map(([key, val]) => (
                     <tr key={key} className="border-b border-border last:border-0">
                       <td className="py-2 pr-4 text-sm font-medium text-muted-foreground w-1/3">{key}</td>
-                      <td className="py-2 text-sm text-foreground">{val as string}</td>
+                      <td className="py-2 text-sm text-foreground">{val}</td>
                     </tr>
                   ))}
                 </tbody>

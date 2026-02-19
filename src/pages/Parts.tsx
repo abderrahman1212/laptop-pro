@@ -1,57 +1,47 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import ProductCard from '@/components/ProductCard';
-import { getProducts, getCategories } from '@/lib/api';
-import { useLanguage } from '@/context/LanguageContext';
+import { parts } from '@/data/products';
 
+const categories = ['All', 'Batteries', 'Screens', 'Keyboards', 'Chargers', 'RAM', 'Storage', 'Cooling', 'Accessories'];
 const brands = ['All', 'Kingston', 'Samsung', 'Anker', 'OEM', 'Thermal Grizzly', 'Compatible', 'Universal'];
 const sortOptions = ['Featured', 'Price: Low to High', 'Price: High to Low', 'Top Rated'];
 
+const tagMap: Record<string, string> = {
+  Batteries: 'battery',
+  Screens: 'screen',
+  Keyboards: 'keyboard',
+  Chargers: 'charger',
+  RAM: 'ram',
+  Storage: 'ssd',
+  Cooling: 'cooling',
+  Accessories: 'accessories',
+};
+
 export default function Parts() {
   const [search, setSearch] = useState('');
-  const [categories, setCategories] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('All');
   const [brand, setBrand] = useState('All');
   const [sort, setSort] = useState('Featured');
-  const { language } = useLanguage();
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const cats = await getCategories(language);
-        setCategories(cats);
-
-        const productsResponse = await getProducts({ lang: language });
-        setProducts(productsResponse.data);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [language]);
 
   const filtered = useMemo(() => {
-    let list = [...products];
+    let list = [...parts];
     if (search) list = list.filter(p =>
       p.title.toLowerCase().includes(search.toLowerCase()) ||
-      (p.brand && p.brand.toLowerCase().includes(search.toLowerCase()))
+      p.brand.toLowerCase().includes(search.toLowerCase())
     );
     if (category !== 'All') {
-      list = list.filter(p => p.category?.name === category || p.category_id.toString() === category);
+      const tag = tagMap[category];
+      list = list.filter(p => p.tags?.includes(tag));
     }
     if (brand !== 'All') list = list.filter(p => p.brand === brand);
     if (sort === 'Price: Low to High') list.sort((a, b) => a.price - b.price);
     else if (sort === 'Price: High to Low') list.sort((a, b) => b.price - a.price);
-    else if (sort === 'Top Rated') list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    else if (sort === 'Top Rated') list.sort((a, b) => b.rating - a.rating);
     return list;
-  }, [search, category, brand, sort, products]);
+  }, [search, category, brand, sort]);
 
   return (
     <main className="min-h-screen bg-background">
@@ -68,25 +58,17 @@ export default function Parts() {
       <div className="container mx-auto px-4 py-8">
         {/* Category chips */}
         <div className="flex flex-wrap gap-2 mb-6">
-          <button
-            onClick={() => setCategory('All')}
-            className={`text-sm px-3 py-1.5 rounded-full font-medium transition-colors ${category === 'All'
-              ? 'bg-primary text-primary-foreground shadow-blue'
-              : 'bg-card border border-border text-foreground hover:border-primary hover:text-primary'
-              }`}
-          >
-            All
-          </button>
           {categories.map(c => (
             <button
-              key={c.id}
-              onClick={() => setCategory(c.name)}
-              className={`text-sm px-3 py-1.5 rounded-full font-medium transition-colors ${category === c.name
-                ? 'bg-primary text-primary-foreground shadow-blue'
-                : 'bg-card border border-border text-foreground hover:border-primary hover:text-primary'
-                }`}
+              key={c}
+              onClick={() => setCategory(c)}
+              className={`text-sm px-3 py-1.5 rounded-full font-medium transition-colors ${
+                category === c
+                  ? 'bg-primary text-primary-foreground shadow-blue'
+                  : 'bg-card border border-border text-foreground hover:border-primary hover:text-primary'
+              }`}
             >
-              {c.name}
+              {c}
             </button>
           ))}
         </div>
@@ -115,11 +97,7 @@ export default function Parts() {
 
         <p className="text-sm text-muted-foreground mb-4">{filtered.length} part{filtered.length !== 1 ? 's' : ''} found</p>
 
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <div key={i} className="h-80 bg-muted rounded-xl animate-pulse" />)}
-          </div>
-        ) : filtered.length === 0 ? (
+        {filtered.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-muted-foreground mb-4">No parts match your search.</p>
             <Button onClick={() => { setCategory('All'); setBrand('All'); setSearch(''); }}>Clear Filters</Button>
