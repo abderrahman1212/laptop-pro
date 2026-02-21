@@ -1,32 +1,54 @@
-import { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { Language } from '@/i18n/translations';
 import { Globe } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 
-const languages = [
-  { code: 'fr', label: 'FR', dir: 'ltr' },
-  { code: 'ar', label: 'عر', dir: 'rtl' },
-];
+const langLabels: Record<Language, string> = {
+  fr: 'Français',
+  en: 'English',
+  ar: 'العربية',
+};
 
-export default function LanguageSwitcher() {
-  const { i18n } = useTranslation();
+const LanguageSwitcher = () => {
+  const { language, setLanguage } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.dir = dir;
-    document.documentElement.lang = i18n.language;
-  }, [i18n.language]);
-
-  const currentLang = languages.find(l => l.code === i18n.language) || languages[0];
-  const nextLang = languages.find(l => l.code !== i18n.language) || languages[1];
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   return (
-    <button
-      onClick={() => i18n.changeLanguage(nextLang.code)}
-      className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-      aria-label={`Switch to ${nextLang.label}`}
-    >
-      <Globe className="w-3.5 h-3.5" />
-      <span>{nextLang.label}</span>
-    </button>
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground hover:bg-secondary"
+        aria-label="Change language"
+      >
+        <Globe className="h-4 w-4" />
+        <span className="hidden sm:inline">{langLabels[language]}</span>
+      </button>
+      {open && (
+        <div className="absolute end-0 top-full mt-1 w-36 rounded-lg border bg-card p-1 shadow-elevated z-50">
+          {(Object.keys(langLabels) as Language[]).map(lang => (
+            <button
+              key={lang}
+              onClick={() => { setLanguage(lang); setOpen(false); }}
+              className={`w-full rounded-md px-3 py-2 text-start text-sm transition-colors ${
+                language === lang ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'
+              }`}
+            >
+              {langLabels[lang]}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
-}
+};
+
+export default LanguageSwitcher;
