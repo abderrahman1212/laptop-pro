@@ -1,4 +1,3 @@
-import { forwardRef } from 'react';
 import { Product } from '@/types/product';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCart } from '@/contexts/CartContext';
@@ -11,7 +10,7 @@ interface ProductCardProps {
   index?: number;
 }
 
-const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(({ product, index = 0 }, ref) => {
+const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   const { language, t } = useLanguage();
   const { addToCart } = useCart();
 
@@ -31,7 +30,6 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(({ product, ind
 
   return (
     <motion.div
-      ref={ref}
       initial={{ opacity: 0, scale: 0.95 }}
       whileInView={{ opacity: 1, scale: 1 }}
       viewport={{ once: true }}
@@ -103,6 +101,6 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(({ product, ind
       </div>
     </motion.div>
   );
-});
+};
 
 export default ProductCard;

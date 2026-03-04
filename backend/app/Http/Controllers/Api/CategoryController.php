@@ -14,11 +14,10 @@ class CategoryController extends Controller
     public function index(Request $request)
     {
         if ($request->has('flat')) {
-            $categories = Category::where('is_active', true)->orderBy('order')->get();
-            return \App\Http\Resources\CategoryResource::collection($categories);
+            return Category::where('is_active', true)->orderBy('order')->get();
         }
 
-        $categories = Category::with([
+        return Category::with([
             'children' => function ($query) {
                 $query->where('is_active', true)->orderBy('order');
             }
@@ -27,8 +26,6 @@ class CategoryController extends Controller
             ->where('is_active', true)
             ->orderBy('order')
             ->get();
-
-        return \App\Http\Resources\CategoryResource::collection($categories);
     }
 
     /**
@@ -36,7 +33,6 @@ class CategoryController extends Controller
      */
     public function show($id)
     {
-        $category = Category::with(['children', 'products'])->findOrFail($id);
-        return new \App\Http\Resources\CategoryResource($category);
+        return Category::with(['children', 'products'])->findOrFail($id);
     }
 }
